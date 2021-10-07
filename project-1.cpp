@@ -225,15 +225,62 @@ float			Dot(float [3], float [3]);
 float			Unit(float [3], float [3]);
 
 
-// 2dPoints for drawing sierpinski triangle
-struct Point2d {
-	GLfloat x, y;
-	Point2d(GLfloat x, GLfloat y): x(x), y(y) {}
-	Point2d midpoint(Point2d point) {
-		return Point2d((x + point.x)/2, (y + point.y)/2);
+// ### My code ###### 3dPoints for drawing sierpinski triangle
+struct Point3d {
+	GLfloat x, y, z;
+	Point3d(GLfloat x, GLfloat y, GLfloat z): x(x), y(y), z(z) {}
+	Point3d midpoint(Point3d point) {
+		return Point3d((x + point.x)/2, (y + point.y)/2, (y + point.y)/2);
 	}
 };
 
+void drawSierpinski (Point3d upper, Point3d right, Point3d left, Point3d rear, int depth)
+{
+	if(depth == 7) {
+		//draw tetrahedron
+
+		glBegin(GL_TRIANGLES);
+
+		//define color
+		float scale = 10;
+		glColor3f(right.x/scale, 2*right.y/scale, right.z/scale + .1);
+
+		//front triangle
+		glVertex3f( left.x, left.y, left.z);
+		glVertex3f( upper.x, upper.y, upper.z);
+		glVertex3f( right.x,  right.y, right.z);
+
+		//right side triangle
+		glVertex3f( upper.x, upper.y, upper.z);
+		glVertex3f( rear.x,  rear.y, rear.z);
+		glVertex3f( right.x,  right.y, right.z);
+
+		//left side triangle
+		glVertex3f( upper.x, upper.y, upper.z);
+		glVertex3f( left.x, left.y, left.z);
+		glVertex3f( rear.x,  rear.y, rear.z);
+
+		//bottom triangle
+		glVertex3f( right.x,  right.y, right.z);
+		glVertex3f( rear.x,  rear.y, rear.z);
+		glVertex3f( left.x, left.y, left.z);
+		
+
+		glEnd();
+		return;
+	}
+
+	//recursively dive deeper
+	// upper
+	drawSierpinski(upper, right.midpoint(upper), left.midpoint(upper), rear.midpoint(upper), depth + 1);
+	// right
+	drawSierpinski(upper.midpoint(right), right,  left.midpoint(right), rear.midpoint(right), depth + 1);
+	// left
+	drawSierpinski(upper.midpoint(left), right.midpoint(left), left, rear.midpoint(left), depth + 1);
+	// rear
+	drawSierpinski(upper.midpoint(rear), right.midpoint(rear), left.midpoint(rear), rear, depth + 1);
+	return;
+}
 
 
 
@@ -393,11 +440,11 @@ Display( )
 
 	// possibly draw the axes:
 
-	// if( AxesOn != 0 )
-	// {
-	// 	glColor3fv( &Colors[WhichColor][0] );
-	// 	glCallList( AxesList );
-	// }
+	if( AxesOn != 0 )
+	{
+		glColor3fv( &Colors[WhichColor][0] );
+		glCallList( AxesList );
+	}
 
 
 	// since we are using glScalef( ), be sure normals get unitized:
@@ -411,19 +458,15 @@ Display( )
 
 	// Stuff you've added:
 
-	// Borders of triangle
-	static Point2d vertices[] = {Point2d(0, 0), Point2d(20, 50), Point2d(50, 0)};
+	// Define the initial borders of your triangle:
+	float scale = 10;
+	float heightMult = .86;
+	static Point3d upper = Point3d(scale/2, scale/2, scale*heightMult);
+	static Point3d right = Point3d(scale,0,0);
+	static Point3d left = Point3d(0,0,0);
+	static Point3d rear = Point3d(scale/2,scale*heightMult,0);
 
-
-	// Draw 1000 points:
-	static Point2d p = vertices[0];
-	glBegin(GL_POINTS);
-	for (int k = 0; k < 10000; k++) {
-		glColor3f(1,0,1);
-		p = p.midpoint(vertices[rand() % 3]);
-		glVertex2f(p.x, p.y);
-	}
-	glEnd();
+	drawSierpinski(upper, right, left, rear, 0);
 
 	// End of stuff I've added
 
